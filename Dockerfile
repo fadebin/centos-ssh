@@ -6,7 +6,7 @@
 # =============================================================================
 FROM centos:7.3.1611
 
-MAINTAINER James Deathe <james.deathe@gmail.com>
+MAINTAINER Bin Xu <fadebin@gmail.com>
 
 # -----------------------------------------------------------------------------
 # Base Install + Import the RPM GPG keys for Repositories
@@ -32,6 +32,7 @@ RUN rpm --rebuilddb \
 		python-setuptools-0.9.8-4.el7 \
 		yum-plugin-versionlock-1.1.31-40.el7 \
 		openssl-1.0.1e-60.el7 \
+		git\
 	&& yum versionlock add \
 		vim-minimal \
 		xz \
@@ -127,6 +128,9 @@ RUN mkdir -p \
 	&& ln -sf \
 		/etc/services-config/supervisor/supervisord.d/sshd-bootstrap.conf \
 		/etc/supervisord.d/sshd-bootstrap.conf \
+	&& ln -sf \
+		/etc/services-config/supervisor/supervisord.d/ssr-boot.conf \
+		/etc/supervisord.d/ssr-boot.conf \
 	&& chmod 700 \
 		/usr/sbin/{scmi,sshd-{bootstrap,wrapper}}
 
@@ -147,7 +151,25 @@ ENV SSH_AUTHORIZED_KEYS="" \
 	SSH_USER_ID="500:500" \
 	SSH_USER_PASSWORD="" \
 	SSH_USER_PASSWORD_HASHED=false \
-	SSH_USER_SHELL="/bin/bash"
+	SSH_USER_SHELL="/bin/bash" \
+	SS_AUTOSTART_SSR=true \
+	SS_DEFAULT_PATH="/fadebin"
+
+# -----------------------------------------------------------------------------
+# Git clone the ssr and config ssr
+# -----------------------------------------------------------------------------
+RUN mkdir -p $SS_DEFAULT_PATH \
+	&& git clone -b manyuser https://github.com/shadowsocksr/shadowsocksr.git $SS_DEFAULT_PATH/shadowsocksr \
+	&& cd $SS_DEFAULT_PATH/shadowsocksr \
+	&& bash $SS_DEFAULT_PATH/shadowsocksr/initcfg.sh
+
+RUN sed -i \
+	-e 's~.*\"protocol\":.*~    \"protocol\": \"origin\",~g' \
+	-e 's~.*\"obfs\":.*~    \"obfs\": \"plain\",~g' \
+	-e 's~.*\"method\":.*~    \"method\": \"aes-256-cfb\",~g' \
+	-e 's~.*\"password\":.*~    \"port_password\": \{\n        \"8285\": \"xubin!@#\",\n        \"8286\": \"xubin!@#\",\n        \"8287\": \"xubin!@#\",\n        \"8288\": \"xubin!@#\"\n        \},~g' \
+	-e '#.*\"server_port\":#d' \
+	$SS_DEFAULT_PATH/shadowsocksr/user-config.json
 
 # -----------------------------------------------------------------------------
 # Set image metadata
