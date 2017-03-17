@@ -32,7 +32,8 @@ RUN rpm --rebuilddb \
 		python-setuptools-0.9.8-4.el7 \
 		yum-plugin-versionlock-1.1.31-40.el7 \
 		openssl-1.0.1e-60.el7 \
-		git\
+		git \
+		lsof \
 	&& yum versionlock add \
 		vim-minimal \
 		xz \
@@ -153,7 +154,10 @@ ENV SSH_AUTHORIZED_KEYS="" \
 	SSH_USER_PASSWORD_HASHED=false \
 	SSH_USER_SHELL="/bin/bash" \
 	SS_AUTOSTART_SSR=true \
-	SS_DEFAULT_PATH="/fadebin"
+	SS_DEFAULT_PATH="/fadebin" \
+	SS_PROTOCOL="origin" \
+	SS_OBFS="plain" \
+	SS_METHOD="aes-256-cfb"
 
 # -----------------------------------------------------------------------------
 # Git clone the ssr and config ssr
@@ -164,11 +168,11 @@ RUN mkdir -p $SS_DEFAULT_PATH \
 	&& bash $SS_DEFAULT_PATH/shadowsocksr/initcfg.sh
 
 RUN sed -i \
-	-e 's~.*\"protocol\":.*~    \"protocol\": \"origin\",~g' \
-	-e 's~.*\"obfs\":.*~    \"obfs\": \"plain\",~g' \
-	-e 's~.*\"method\":.*~    \"method\": \"aes-256-cfb\",~g' \
+	-e "s~.*\"protocol\":.*~    \"protocol\": \"$SS_PROTOCOL\",~g" \
+	-e "s~.*\"obfs\":.*~    \"obfs\": \"$SS_OBFS\",~g" \
+	-e "s~.*\"method\":.*~    \"method\": \"$SS_METHOD\",~g" \
 	-e 's~.*\"password\":.*~    \"port_password\": \{\n        \"8285\": \"xubin!@#\",\n        \"8286\": \"xubin!@#\",\n        \"8287\": \"xubin!@#\",\n        \"8288\": \"xubin!@#\"\n        \},~g' \
-	-e '#.*\"server_port\":#d' \
+	-e '/.*\"server_port\":/d' \
 	$SS_DEFAULT_PATH/shadowsocksr/user-config.json
 
 # -----------------------------------------------------------------------------
